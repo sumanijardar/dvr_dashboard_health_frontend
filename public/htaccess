@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /dvr_dashboard/
+
+  # Serve index.html for any route that is not a real file or folder
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /dvr_dashboard/index.html [L]
+</IfModule>

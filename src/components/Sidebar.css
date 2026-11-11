@@ -1,0 +1,27 @@
+/* Sidebar Specific Styling */
+.sidebar-nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #1e293b transparent;
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+.nav-section-title {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+  padding: 0.5rem 0.75rem 0.25rem;
+}

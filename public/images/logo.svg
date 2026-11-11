@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" fill="none">
+  <rect width="36" height="36" rx="8" fill="#10B981" />
+  <circle cx="18" cy="18" r="8" fill="#064E3B" />
+  <circle cx="18" cy="18" r="4" fill="#34D399" />
+  <text x="45" y="24" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="700" font-size="16">SAR DVR</text>
+  <text x="45" y="34" fill="#10B981" font-family="system-ui, sans-serif" font-weight="600" font-size="9">FLEET OPS</text>
+</svg>

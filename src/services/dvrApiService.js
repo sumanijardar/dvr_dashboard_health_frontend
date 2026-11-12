@@ -556,12 +556,13 @@ export async function fetchLogDvrNames() {
 
 /**
  * Fetches paginated footage availability records with optional filters
- * @param {object} params - page, limit, status, ip, from_date, to_date, search, sort, dir
+ * @param {object} params - page, limit, status, remark, ip, from_date, to_date, search, sort, dir
  */
 export async function fetchFootageList({
   page = 1,
   limit = 25,
   status = '',
+  remark = '',
   ip = '',
   from_date = '',
   to_date = '',
@@ -573,6 +574,7 @@ export async function fetchFootageList({
   q.append('page', page);
   q.append('limit', limit);
   if (status)    q.append('status', status);
+  if (remark)    q.append('remark', remark);
   if (ip)        q.append('ip', ip);
   if (from_date) q.append('from_date', from_date);
   if (to_date)   q.append('to_date', to_date);
@@ -584,11 +586,11 @@ export async function fetchFootageList({
 }
 
 /**
- * Fetches total and per-status counts for footage availability report
+ * Fetches total, distinct IPs, per-status, and per-remark counts for footage availability report
  */
 export async function fetchFootageCounts() {
   const response = await fetchEndpoint(API_ENDPOINTS.FETCH_FOOTAGE_COUNTS, 10000);
-  return response?.data || { total: 0, status_counts: {} };
+  return response?.data || { total: 0, distinct_ips: 0, status_counts: {}, remark_counts: {} };
 }
 
 /**
@@ -596,6 +598,14 @@ export async function fetchFootageCounts() {
  */
 export async function fetchFootageStatusTypes() {
   const response = await fetchEndpoint(API_ENDPOINTS.FETCH_FOOTAGE_STATUS_TYPES, 10000);
+  return response?.data || [];
+}
+
+/**
+ * Fetches distinct remark values with counts (for filter dropdown)
+ */
+export async function fetchFootageRemarkTypes() {
+  const response = await fetchEndpoint(API_ENDPOINTS.FETCH_FOOTAGE_REMARK_TYPES, 10000);
   return response?.data || [];
 }
 

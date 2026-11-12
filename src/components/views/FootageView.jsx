@@ -5,14 +5,41 @@ import {
   VideoOff, Database, AlertCircle, CheckCircle2, Clock
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { fetchFootageList, fetchFootageCounts, fetchFootageStatusTypes } from '../../services';
+import {
+  fetchFootageList,
+  fetchFootageCounts,
+  fetchFootageStatusTypes,
+  fetchFootageRemarkTypes
+} from '../../services';
 
 // ─── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  PRESENT: { label: 'Present', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', dot: 'bg-emerald-400', icon: CheckCircle2 },
-  NO_RECORDING: { label: 'No Recording', color: 'bg-amber-500/15  text-amber-400  border-amber-500/30', dot: 'bg-amber-400', icon: VideoOff },
-  DVR_DOWN: { label: 'DVR Down', color: 'bg-rose-500/15   text-rose-400   border-rose-500/30', dot: 'bg-rose-400', icon: WifiOff },
+  PRESENT:      { label: 'Present',      color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', dot: 'bg-emerald-400', icon: CheckCircle2 },
+  NO_RECORDING: { label: 'No Recording', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30',       dot: 'bg-amber-400',   icon: VideoOff },
+  NA:           { label: 'NA (DVR Down)', color: 'bg-rose-500/15 text-rose-400 border-rose-500/30',        dot: 'bg-rose-400',    icon: WifiOff },
 };
+
+function RemarkBadge({ remark }) {
+  const val = (remark || '').trim();
+  if (!val || val === 'NA') {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono text-slate-400 bg-slate-500/10 border border-slate-500/20">
+        {val || '—'}
+      </span>
+    );
+  }
+  const isDown = val === 'DVR_DOWN';
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+      isDown
+        ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+        : 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+    }`}>
+      {isDown && <WifiOff className="w-3 h-3" />}
+      {val.replace(/_/g, ' ')}
+    </span>
+  );
+}
 
 function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] || {
@@ -83,13 +110,15 @@ export default function FootageView() {
   const { isDark } = useTheme();
 
   // ─── Counts state ─────────────────────────────────────────────────────────
-  const [counts, setCounts] = useState({ total: 0, status_counts: {} });
+  const [counts, setCounts] = useState({ total: 0, distinct_ips: 0, status_counts: {}, remark_counts: {} });
   const [statusTypes, setStatusTypes] = useState([]);
+  const [remarkTypes, setRemarkTypes] = useState([]);
   const [countsLoading, setCountsLoading] = useState(true);
 
   // ─── Filter state ─────────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [remark, setRemark] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -104,14 +133,19 @@ export default function FootageView() {
 
   const searchTimer = useRef(null);
 
-  // ─── Load counts + status types once ──────────────────────────────────────
+  // ─── Load counts + status/remark types once ───────────────────────────────
   useEffect(() => {
     (async () => {
       setCountsLoading(true);
       try {
-        const [c, s] = await Promise.all([fetchFootageCounts(), fetchFootageStatusTypes()]);
+        const [c, s, r] = await Promise.all([
+          fetchFootageCounts(),
+          fetchFootageStatusTypes(),
+          fetchFootageRemarkTypes()
+        ]);
         setCounts(c);
         setStatusTypes(s);
+        setRemarkTypes(r);
       } catch (e) {
         console.error('[FootageView] counts error:', e);
       } finally {
@@ -129,6 +163,7 @@ export default function FootageView() {
         page,
         limit: rowsPerPage,
         status,
+        remark,
         from_date: fromDate,
         to_date: toDate,
         search,
@@ -146,13 +181,13 @@ export default function FootageView() {
     } finally {
       setLoading(false);
     }
-  }, [status, fromDate, toDate, search, rowsPerPage]);
+  }, [status, remark, fromDate, toDate, search, rowsPerPage]);
 
   // Reset to page 1 on filter change
   useEffect(() => {
     setCurrentPage(1);
     loadData(1);
-  }, [status, fromDate, toDate, rowsPerPage]); // eslint-disable-line
+  }, [status, remark, fromDate, toDate, rowsPerPage]); // eslint-disable-line
 
   // Debounce search
   useEffect(() => {
@@ -172,6 +207,7 @@ export default function FootageView() {
   const handleReset = () => {
     setSearch('');
     setStatus('');
+    setRemark('');
     setFromDate('');
     setToDate('');
     setRowsPerPage(25);
@@ -182,7 +218,7 @@ export default function FootageView() {
     setStatus(prev => prev === s ? '' : s);
   };
 
-  const hasFilters = search || status || fromDate || toDate;
+  const hasFilters = search || status || remark || fromDate || toDate;
 
   // ─── Formatting helpers ────────────────────────────────────────────────────
   const fmtDt = (dt) => {
@@ -265,7 +301,7 @@ export default function FootageView() {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search IP or status…"
+              placeholder="Search IP, status or remark…"
               className={`w-full pl-9 pr-4 py-2 rounded-xl border text-sm transition-all ${inputCls}`}
             />
           </div>
@@ -282,6 +318,23 @@ export default function FootageView() {
               {statusTypes.map(s => (
                 <option key={s.status} value={s.status}>
                   {STATUS_CONFIG[s.status]?.label || s.status} ({s.count})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Remark Dropdown */}
+          <div className="relative min-w-[155px]">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            <select
+              value={remark}
+              onChange={e => setRemark(e.target.value)}
+              className={`w-full pl-9 pr-4 py-2 rounded-xl border text-sm appearance-none cursor-pointer transition-all ${inputCls}`}
+            >
+              <option value="">All Remarks</option>
+              {remarkTypes.map(r => (
+                <option key={r.remark} value={r.remark}>
+                  {r.remark.replace(/_/g, ' ')} ({r.count})
                 </option>
               ))}
             </select>
@@ -376,6 +429,7 @@ export default function FootageView() {
                   </div>
                 </th>
                 <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Remark</th>
                 <th className="px-4 py-3 text-left">
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
@@ -389,17 +443,17 @@ export default function FootageView() {
                 // Skeleton rows
                 Array.from({ length: rowsPerPage > 10 ? 10 : rowsPerPage }).map((_, i) => (
                   <tr key={i} className={`border-b ${tblRow}`}>
-                    {[...Array(6)].map((_, j) => (
+                    {[...Array(7)].map((_, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className={`h-4 rounded animate-pulse ${isDark ? 'bg-slate-700/60' : 'bg-slate-200'}`}
-                          style={{ width: j === 0 ? '2rem' : j === 4 ? '5rem' : '80%' }} />
+                          style={{ width: j === 0 ? '2rem' : (j === 4 || j === 5) ? '5rem' : '80%' }} />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16 text-center">
+                  <td colSpan={7} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-500">
                       <VideoOff className="w-10 h-10 opacity-30" />
                       <span>No footage records found</span>
@@ -440,6 +494,11 @@ export default function FootageView() {
                       {/* Status */}
                       <td className="px-4 py-3">
                         <StatusBadge status={row.status} />
+                      </td>
+
+                      {/* Remark */}
+                      <td className="px-4 py-3">
+                        <RemarkBadge remark={row.remark} />
                       </td>
 
                       {/* Last Updated */}

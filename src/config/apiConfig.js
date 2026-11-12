@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
   FETCH_FOOTAGE: 'api/footage_api.php',
   FETCH_FOOTAGE_COUNTS: 'api/footage_api.php?fetch_footage_counts=1',
   FETCH_FOOTAGE_STATUS_TYPES: 'api/footage_api.php?fetch_status_types=1',
+  FETCH_FOOTAGE_REMARK_TYPES: 'api/footage_api.php?fetch_remark_types=1',
 
   // Analytics (analytics_api.php)
   FETCH_ANALYTICS: 'api/analytics_api.php?fetch_all=1',
